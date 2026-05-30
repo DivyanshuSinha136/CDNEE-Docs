@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CDNEE — Control Dynamic Native Execution Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────── */
+    :root {
+      --bg:         #050a0e;
+      --surface:    #0c1821;
+      --panel:      #112233;
+      --border:     #1e3a55;
+      --accent:     #00d4ff;
+      --accent2:    #00ff9d;
+      --accent3:    #ff6b35;
+      --text:       #e0f0ff;
+      --muted:      #6a8fa8;
+      --heading:    'Syne', sans-serif;
+      --mono:       'DM Mono', monospace;
+      --serif:      'Fraunces', serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,212,255,.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,255,157,.05) 0%, transparent 55%),
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(30,58,85,.18) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(30,58,85,.18) 40px);
+      pointer-events: none;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+    .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+    /* ─── NAV ────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      backdrop-filter: blur(18px);
+      background: rgba(5,10,14,.75);
+      border-bottom: 1px solid var(--border);
+      padding: .9rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--heading); font-weight: 800; font-size: 1.25rem;
+      color: var(--accent); letter-spacing: .08em; text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; flex-wrap: wrap; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: .78rem;
+      letter-spacing: .1em; text-transform: uppercase;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ─── HERO ───────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 8rem 2rem 5rem;
+      position: relative; overflow: hidden;
+    }
+    .hero-tag {
+      font-size: .72rem; letter-spacing: .22em; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: 1.2rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .hero-tag::before {
+      content: '';
+      display: inline-block; width: 2rem; height: 1px; background: var(--accent2);
+    }
+    .hero-title {
+      font-family: var(--heading); font-weight: 800;
+      font-size: clamp(3rem, 8vw, 7rem);
+      line-height: .95; letter-spacing: -.02em;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title .line { display: block; overflow: hidden; }
+    .hero-title .accent-word { color: var(--accent); }
+    .hero-title .outline-word {
+      -webkit-text-stroke: 1.5px var(--accent3);
+      color: transparent;
+    }
+    .hero-sub {
+      font-family: var(--serif); font-style: italic; font-weight: 300;
+      font-size: clamp(1rem, 2.5vw, 1.35rem);
+      color: var(--muted); max-width: 600px;
+      margin-bottom: 1.5rem; line-height: 1.6;
+    }
+    .hero-pills {
+      display: flex; flex-wrap: wrap; gap: .6rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-pill {
+      font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+      border: 1px solid var(--border); color: var(--muted);
+      padding: .3rem .9rem;
+    }
+    .hero-pill.hi { border-color: var(--accent2); color: var(--accent2); }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: .7rem;
+      background: var(--accent); color: var(--bg);
+      font-family: var(--heading); font-weight: 700; font-size: .85rem;
+      letter-spacing: .12em; text-transform: uppercase;
+      padding: .85rem 2rem; text-decoration: none;
+      border: none; cursor: pointer;
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+      transition: background .2s, transform .15s;
+    }
+    .hero-cta:hover { background: var(--accent2); transform: translateY(-2px); }
+    .hero-badge {
+      position: absolute; right: 3rem; top: 50%;
+      transform: translateY(-50%) rotate(-15deg);
+      width: 160px; height: 160px;
+      border: 1.5px solid var(--border); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      opacity: .3; animation: spin 30s linear infinite;
+    }
+    .hero-badge-inner {
+      font-size: .6rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--muted); text-align: center; line-height: 1.8;
+    }
+    @keyframes spin { to { transform: translateY(-50%) rotate(195deg); } }
+
+    /* ─── SECTION SHARED ─────────────────────────────────────── */
+    section { padding: 5rem 0; }
+    .section-label {
+      font-size: .68rem; letter-spacing: .25em; text-transform: uppercase;
+      color: var(--accent3); margin-bottom: .6rem;
+    }
+    .section-title {
+      font-family: var(--heading); font-weight: 700;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      line-height: 1.1; margin-bottom: 1.5rem;
+    }
+    .section-body {
+      color: var(--muted); max-width: 720px; line-height: 1.85;
+    }
+    .section-body strong { color: var(--text); }
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ─── TWO-COL GRID ───────────────────────────────────────── */
+    .two-col {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3rem; align-items: start; margin-top: 3rem;
+    }
+
+    /* ─── PHILOSOPHY CARDS ───────────────────────────────────── */
+    .phil-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1.5px; background: var(--border); margin-top: 3rem;
+    }
+    .phil-card {
+      background: var(--bg); padding: 2rem;
+      transition: background .2s;
+      position: relative; overflow: hidden;
+    }
+    .phil-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent); transform: scaleX(0); transform-origin: left;
+      transition: transform .3s;
+    }
+    .phil-card:hover::before { transform: scaleX(1); }
+    .phil-card:hover { background: var(--surface); }
+    .phil-num {
+      font-family: var(--heading); font-weight: 800; font-size: 2.5rem;
+      color: var(--border); margin-bottom: .5rem; line-height: 1;
+      transition: color .2s;
+    }
+    .phil-card:hover .phil-num { color: var(--accent); }
+    .phil-name {
+      font-family: var(--heading); font-weight: 700; font-size: 1rem;
+      color: var(--accent); margin-bottom: .5rem;
+    }
+    .phil-desc { color: var(--muted); font-size: .83rem; line-height: 1.7; }
+
+    /* ─── TIERS ──────────────────────────────────────────────── */
+    .tiers { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 3rem; }
+    .tier-box {
+      border: 1px solid var(--border);
+      background: var(--surface); padding: 2rem;
+    }
+    .tier-label {
+      font-size: .65rem; letter-spacing: .2em; text-transform: uppercase;
+      margin-bottom: .5rem;
+    }
+    .tier-label.t1 { color: var(--accent); }
+    .tier-label.t2 { color: var(--accent2); }
+    .tier-title {
+      font-family: var(--heading); font-weight: 700; font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .tier-items { list-style: none; display: flex; flex-direction: column; gap: .35rem; }
+    .tier-items li {
+      font-size: .8rem; color: var(--muted);
+      padding-left: 1rem; position: relative;
+    }
+    .tier-items li::before {
+      content: '→'; position: absolute; left: 0;
+      color: var(--accent3); font-size: .7rem;
+    }
+
+    /* ─── STEPS (How It Works) ───────────────────────────────── */
+    .steps { margin-top: 3rem; display: flex; flex-direction: column; border: 1px solid var(--border); }
+    .step {
+      display: grid; grid-template-columns: 5rem 1fr;
+      align-items: stretch; border-bottom: 1px solid var(--border);
+      transition: background .2s;
+    }
+    .step:last-child { border-bottom: none; }
+    .step:hover { background: var(--surface); }
+    .step-num {
+      font-family: var(--heading); font-weight: 800;
+      font-size: 2.5rem; color: var(--border);
+      display: flex; align-items: center; justify-content: center;
+      border-right: 1px solid var(--border); padding: 1.5rem;
+      transition: color .2s;
+    }
+    .step:hover .step-num { color: var(--accent); }
+    .step-content { padding: 1.5rem 2rem; }
+    .step-title {
+      font-family: var(--heading); font-weight: 600;
+      font-size: 1rem; margin-bottom: .4rem; color: var(--text);
+    }
+    .step-desc { color: var(--muted); font-size: .85rem; line-height: 1.7; }
+    .step-tag {
+      display: inline-block; font-size: .65rem; letter-spacing: .1em;
+      text-transform: uppercase; padding: .15rem .5rem;
+      border: 1px solid var(--accent3); color: var(--accent3);
+      margin-bottom: .5rem;
+    }
+
+    /* ─── CODE BOX ───────────────────────────────────────────── */
+    .code-box {
+      border: 1px solid var(--border); background: var(--surface); overflow: hidden;
+    }
+    .code-header {
+      padding: .7rem 1.5rem; background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: .6rem;
+      font-size: .7rem; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .d1 { background: #ff5f57; } .d2 { background: #febc2e; } .d3 { background: #28c840; }
+    .code-body { padding: 1.5rem 2rem; overflow-x: auto; }
+    .code-body pre {
+      font-family: var(--mono); font-size: .82rem;
+      line-height: 1.9; color: var(--text); white-space: pre;
+    }
+    .kw  { color: var(--accent); }
+    .fn  { color: var(--accent2); }
+    .str { color: #f7c948; }
+    .cm  { color: var(--muted); font-style: italic; }
+    .nm  { color: var(--accent3); }
+    .op  { color: #c792ea; }
+
+    /* ─── OPCODE TABLE ───────────────────────────────────────── */
+    .op-table { width: 100%; border-collapse: collapse; margin-top: 2rem; font-size: .82rem; }
+    .op-table th {
+      font-family: var(--heading); font-weight: 700; font-size: .7rem;
+      letter-spacing: .15em; text-transform: uppercase;
+      color: var(--muted); text-align: left;
+      padding: .7rem 1rem; border-bottom: 1px solid var(--border);
+    }
+    .op-table td { padding: .65rem 1rem; border-bottom: 1px solid rgba(30,58,85,.4); vertical-align: top; }
+    .op-table tr:hover td { background: var(--surface); }
+    .op-table td:first-child { color: var(--accent); font-weight: 500; }
+    .op-table td:nth-child(2) { color: var(--accent3); font-size: .78rem; }
+    .op-table td:nth-child(3) { color: var(--muted); font-size: .8rem; }
+
+    /* ─── TYPE TABLE ─────────────────────────────────────────── */
+    .type-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1px; background: var(--border); margin-top: 2rem;
+    }
+    .type-cell {
+      background: var(--bg); padding: 1rem 1.2rem;
+      transition: background .2s;
+    }
+    .type-cell:hover { background: var(--surface); }
+    .type-name { color: var(--accent); font-weight: 500; font-size: .9rem; margin-bottom: .2rem; }
+    .type-ctype { color: var(--accent3); font-size: .72rem; margin-bottom: .15rem; }
+    .type-note { color: var(--muted); font-size: .7rem; }
+
+    /* ─── VAR TABLE ──────────────────────────────────────────── */
+    .var-table { width: 100%; border-collapse: collapse; margin-top: 2rem; font-size: .82rem; }
+    .var-table th {
+      font-family: var(--heading); font-weight: 700; font-size: .7rem;
+      letter-spacing: .15em; text-transform: uppercase;
+      color: var(--muted); text-align: left;
+      padding: .6rem 1rem; border-bottom: 1px solid var(--border);
+    }
+    .var-table td { padding: .55rem 1rem; border-bottom: 1px solid rgba(30,58,85,.4); }
+    .var-table tr:hover td { background: var(--surface); }
+    .var-table td:first-child { color: var(--accent2); font-size: .82rem; }
+    .var-table td:nth-child(2) { color: var(--muted); font-size: .8rem; }
+
+    /* ─── CARDS ──────────────────────────────────────────────── */
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5px; margin-top: 3rem; background: var(--border);
+    }
+    .card { background: var(--bg); padding: 2rem; transition: background .2s; }
+    .card:hover { background: var(--surface); }
+    .card-icon { font-size: 1.5rem; margin-bottom: 1rem; display: block; }
+    .card-title { font-family: var(--heading); font-weight: 700; font-size: 1.05rem; margin-bottom: .5rem; color: var(--accent); }
+    .card-body { color: var(--muted); font-size: .83rem; line-height: 1.7; }
+
+    /* ─── STDLIB SECTIONS ────────────────────────────────────── */
+    .stdlib-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .stdlib-block {
+      border: 1px solid var(--border); background: var(--surface);
+      padding: 1.5rem; transition: border-color .2s;
+    }
+    .stdlib-block:hover { border-color: var(--accent); }
+    .stdlib-block-title {
+      font-family: var(--heading); font-weight: 700; font-size: .9rem;
+      color: var(--accent); margin-bottom: .8rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .stdlib-ops { list-style: none; display: flex; flex-direction: column; gap: .2rem; }
+    .stdlib-ops li { font-size: .75rem; color: var(--muted); }
+    .stdlib-ops li span { color: var(--accent3); }
+
+    /* ─── FFI TABLE ──────────────────────────────────────────── */
+    .lib-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem;
+    }
+    .lib-box { border: 1px solid var(--border); background: var(--surface); padding: 1.5rem; }
+    .lib-os {
+      font-size: .65rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--accent3); margin-bottom: .8rem;
+    }
+    .lib-list { list-style: none; display: flex; flex-direction: column; gap: .3rem; }
+    .lib-list li { font-size: .8rem; color: var(--muted); display: flex; gap: .6rem; }
+    .lib-list li span { color: var(--accent2); min-width: 80px; }
+
+    /* ─── CLI REF ────────────────────────────────────────────── */
+    .cli-flags { margin-top: 2rem; display: flex; flex-direction: column; gap: .4rem; }
+    .cli-flag {
+      display: grid; grid-template-columns: 220px 1fr;
+      gap: 1rem; padding: .6rem 1rem;
+      border-bottom: 1px solid rgba(30,58,85,.4);
+      font-size: .82rem; transition: background .2s;
+    }
+    .cli-flag:hover { background: var(--surface); }
+    .cli-flag .flag { color: var(--accent); font-weight: 500; }
+    .cli-flag .desc { color: var(--muted); }
+
+    /* ─── VERSION TABLE ──────────────────────────────────────── */
+    .ver-table { width: 100%; border-collapse: collapse; margin-top: 2rem; font-size: .83rem; }
+    .ver-table th {
+      font-family: var(--heading); font-weight: 700; font-size: .7rem;
+      letter-spacing: .15em; text-transform: uppercase;
+      color: var(--muted); text-align: left;
+      padding: .6rem 1rem; border-bottom: 1px solid var(--border);
+    }
+    .ver-table td { padding: .65rem 1rem; border-bottom: 1px solid rgba(30,58,85,.4); }
+    .ver-table tr:hover td { background: var(--surface); }
+    .ver-table td:first-child {
+      color: var(--accent2); font-weight: 600;
+      font-family: var(--heading);
+    }
+    .ver-table td:nth-child(2) { color: var(--muted); }
+
+    /* ─── CALLOUT ────────────────────────────────────────────── */
+    .callout {
+      border-left: 3px solid var(--accent); background: var(--surface);
+      padding: 1.2rem 1.5rem; margin-top: 1.5rem;
+      font-size: .85rem; color: var(--muted); line-height: 1.7;
+    }
+    .callout strong { color: var(--text); }
+
+    /* ─── STATS STRIP ────────────────────────────────────────── */
+    .stats-strip {
+      display: flex; align-items: stretch;
+      border: 1px solid var(--border); overflow: hidden; margin-top: 4rem;
+    }
+    .stat {
+      flex: 1; padding: 2.5rem 2rem; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--heading); font-weight: 800;
+      font-size: 2.8rem; color: var(--accent);
+      display: block; line-height: 1; margin-bottom: .4rem;
+    }
+    .stat-label { font-size: .72rem; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+
+    /* ─── SCROLL FADE ─────────────────────────────────────────── */
+    .fade-in { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+    .fade-in.visible { opacity: 1; transform: none; }
+
+    /* ─── FOOTER ─────────────────────────────────────────────── */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-brand { font-family: var(--heading); font-weight: 800; color: var(--accent); font-size: 1.1rem; letter-spacing: .08em; }
+    .footer-note { font-size: .72rem; color: var(--muted); letter-spacing: .08em; }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .two-col, .phil-grid, .tiers, .lib-grid { grid-template-columns: 1fr; }
+      .stats-strip { flex-direction: column; }
+      .stat { border-right: none; border-bottom: 1px solid var(--border); }
+      .stat:last-child { border-bottom: none; }
+      .hero-badge { display: none; }
+      nav { padding: .7rem 1.2rem; }
+      .nav-links { gap: .8rem; }
+      .cli-flag { grid-template-columns: 1fr; gap: .2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">CDNEE</a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#tiers">Tiers</a></li>
+    <li><a href="#syntax">Syntax</a></li>
+    <li><a href="#stdlib">Stdlib</a></li>
+    <li><a href="#jit">JIT / MEX</a></li>
+    <li><a href="#ffi">FFI</a></li>
+    <li><a href="#os">OS Dev</a></li>
+    <li><a href="#cli">CLI / CC</a></li>
+    <li><a href="#versions">Versions</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-tag">Control Dynamic Native Execution Engine · v1.0</div>
+    <h1 class="hero-title">
+      <span class="line"><span class="accent-word">CDNEE</span></span>
+      <span class="line">Write High.</span>
+      <span class="line"><span class="outline-word">Run Native.</span></span>
+    </h1>
+    <p class="hero-sub">
+      A high-level assembly-oriented language with bare-metal x86-64 performance.
+      Inline NASM. JIT compilation. FFI. All in one coherent source file.
+    </p>
+    <div class="hero-pills">
+      <span class="hero-pill hi">Powered by Pythonaibrain-NASM / DNEE v1.0</span>
+      <span class="hero-pill">.cdnee · .cdneef · .asm · .bin</span>
+      <span class="hero-pill">OS Dev · Flat Binary · ELF64 Kernel</span>
+    </div>
+    <a href="#about" class="hero-cta">Explore the Language →</a>
+    <div class="hero-badge">
+      <div class="hero-badge-inner">JIT · NASM · x86-64<br/>◈<br/>Native First<br/>Always Fast</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="container fade-in">
+    <p class="section-label">01 — About</p>
+    <h2 class="section-title">What is CDNEE?</h2>
+    <p class="section-body">
+      <strong>CDNEE (Control Dynamic Native Execution Engine)</strong> is a high-level assembly-oriented programming language designed for direct access to native machine-code execution without the complexity of traditional assemblers or low-level compilers. It sits at a unique intersection: <strong>readable, structured syntax</strong> on the surface, <strong>bare-metal native performance</strong> underneath.
+    </p>
+    <p class="section-body" style="margin-top:1rem;">
+      Programs are written in <strong>.cdnee</strong> source files and run through the CDNEE runtime, which compiles and executes x86-64 machine code on the fly using a built-in JIT engine backed by NASM. You can drop into raw assembly, benchmark it, patch it at runtime, inspect its disassembly, snapshot its memory, and call foreign libraries — all from a single coherent source file.
+    </p>
+
+    <div class="phil-grid" style="margin-top:3rem;">
+      <div class="phil-card">
+        <div class="phil-num">01</div>
+        <div class="phil-name">Native First</div>
+        <div class="phil-desc">Every math operation, sort, and hash function goes through the DNEE engine's NASM-compiled native library. No slow path, no interpreted fallback by default. The language exposes what the CPU does, not what is convenient.</div>
+      </div>
+      <div class="phil-card">
+        <div class="phil-num">02</div>
+        <div class="phil-name">JIT as a First-Class Citizen</div>
+        <div class="phil-desc">Inline NASM assembly is not an escape hatch — it is a core language feature. Write assembly snippets directly in source using triple-quoted blocks, compile them to executable memory regions, and call them like any other function.</div>
+      </div>
+      <div class="phil-card">
+        <div class="phil-num">03</div>
+        <div class="phil-name">Introspection and Control</div>
+        <div class="phil-desc">A CDNEE program can disassemble its own compiled regions, compute checksums, walk patch history, inspect CPU cache topology, and read cycle-accurate timing via RDTSC. You always know what is in memory and how it is performing.</div>
+      </div>
+      <div class="phil-card">
+        <div class="phil-num">04</div>
+        <div class="phil-name">Structured Simplicity</div>
+        <div class="phil-desc">Despite its low-level power, CDNEE code reads linearly. No pointers in source syntax, no manual stack management, no header files. Labels, functions, error handling, and I/O all follow a clean, consistent grammar learnable in an afternoon.</div>
+      </div>
+    </div>
+
+    <div class="stats-strip">
+      <div class="stat">
+        <span class="stat-num">3</span>
+        <span class="stat-label">Execution Tiers</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">50+</span>
+        <span class="stat-label">Native Math Ops</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">x86-64</span>
+        <span class="stat-label">Architecture</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">v1.0</span>
+        <span class="stat-label">Current Version</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- TIERS -->
+<section id="tiers">
+  <div class="container fade-in">
+    <p class="section-label">02 — Language Tiers</p>
+    <h2 class="section-title">Execution Model</h2>
+    <p class="section-body">CDNEE is organized into three execution tiers. Tier 1 requires no compilation step and is available immediately in any program. Tier 2 gives you the full JIT/MEX engine. Tier 3 targets bare-metal OS development — flat binaries and freestanding ELF64 kernels.</p>
+    <div class="tiers">
+      <div class="tier-box">
+        <div class="tier-label t1">Tier 1 — Native Math Library</div>
+        <div class="tier-title">Built-in NASM Routines</div>
+        <ul class="tier-items">
+          <li>Scalar arithmetic — ADD, SUB, MUL, DIV, MOD, POW, ABS, NEG, SIGN</li>
+          <li>Integer math — ISQRT, GCD, LCM, FACTORIAL, FIBONACCI, MULDIV, CLAMP</li>
+          <li>Number theory — IS_PRIME, NEXT_PRIME, PREV_PRIME, TOTIENT, COLLATZ</li>
+          <li>Bit operations — POPCOUNT, NLZ, NTZ, BIT_REV, ROL64, ROR64, BSWAP64</li>
+          <li>Hashing — HASH_FNV64 (FNV-1a 64-bit), HASH_MURMUR64</li>
+          <li>Modular arithmetic — MULMOD64, ADDMOD64, POWMOD64, MODINV64</li>
+          <li>Safe arithmetic — SAFE_ADD, SAFE_SUB, SAFE_MUL (with overflow flags)</li>
+          <li>Sorting &amp; searching — SORT_NET4, BIN_SEARCH, LIN_SEARCH, LOWER_BOUND</li>
+          <li>Timing — RDTSC_START, RDTSC_STOP, CPUID</li>
+        </ul>
+      </div>
+      <div class="tier-box">
+        <div class="tier-label t2">Tier 2 — JIT / MEX Engine</div>
+        <div class="tier-title">Machine Execution Engine</div>
+        <ul class="tier-items">
+          <li>JIT compilation — compile inline NASM or .asm files into executable memory regions</li>
+          <li>Binary I/O — export compiled regions to .bin; reload in future runs</li>
+          <li>Memory control — freeze/thaw, snapshots, restore, clone, copy-on-write</li>
+          <li>Hot patching — overwrite bytes, NOP ranges, replace hex patterns, revert step-by-step</li>
+          <li>Inspection — disassemble regions, hex-dump, compute CRC-32, walk patch history</li>
+          <li>FFI — load shared libraries, bind exported symbols, call as native functions</li>
+          <li>Profiling — RDTSC-accurate benchmarking, per-region call counters, cache statistics</li>
+          <li>Trampoline patching — insert jump redirects into compiled regions</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- SYNTAX -->
+<section id="syntax">
+  <div class="container fade-in">
+    <p class="section-label">03 — Language Syntax</p>
+    <h2 class="section-title">Program Structure &amp; Syntax</h2>
+    <p class="section-body">CDNEE source files are plain UTF-8 text with the <strong>.cdnee</strong> extension. One statement per line, no semicolons needed. Comments start with <strong>;</strong> or <strong>#</strong>. Execution begins at the <strong>@entry</strong> label.</p>
+
+    <div class="two-col" style="margin-top:2.5rem;">
+      <div>
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-bottom:1rem;">Hello World</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>hello.cdnee</div>
+          <div class="code-body"><pre><span class="cm">; hello.cdnee</span>
+<span class="nm">@entry</span> <span class="fn">main</span>
+
+<span class="fn">main:</span>
+    <span class="kw">PRINTLN</span> <span class="str">"Hello, CDNEE!"</span>
+    <span class="kw">EXIT</span></pre></div>
+        </div>
+
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-top:1.5rem;margin-bottom:1rem;">Variables &amp; Arithmetic</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>vars.cdnee</div>
+          <div class="code-body"><pre><span class="kw">SET</span> <span class="nm">x</span>, <span class="op">42</span>
+<span class="kw">LET</span> <span class="nm">name</span>, <span class="str">"Alice"</span>
+<span class="kw">SET</span> <span class="nm">pi</span>, <span class="op">3.14159</span>
+<span class="kw">SET</span> <span class="nm">flag</span>, <span class="op">TRUE</span>
+
+<span class="kw">ADD</span> <span class="nm">result</span>, <span class="nm">x</span>, <span class="op">100</span>    <span class="cm">; result = 142</span>
+<span class="kw">MUL</span> <span class="nm">sq</span>, <span class="nm">x</span>, <span class="nm">x</span>           <span class="cm">; sq = 1764</span>
+<span class="kw">MOD</span> <span class="nm">rem</span>, <span class="nm">x</span>, <span class="op">5</span>          <span class="cm">; rem = 2</span>
+<span class="kw">PRINTLN</span> <span class="nm">result</span></pre></div>
+        </div>
+
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-top:1.5rem;margin-bottom:1rem;">Control Flow</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>loop.cdnee</div>
+          <div class="code-body"><pre><span class="kw">SET</span> <span class="nm">i</span>, <span class="op">1</span>
+<span class="fn">loop:</span>
+    <span class="kw">CMP</span> <span class="nm">i</span>, <span class="op">10</span>
+    <span class="kw">JGT</span> <span class="fn">done</span>
+    <span class="kw">PRINTLN</span> <span class="nm">i</span>
+    <span class="kw">ADD</span> <span class="nm">i</span>, <span class="nm">i</span>, <span class="op">1</span>
+    <span class="kw">JMP</span> <span class="fn">loop</span>
+<span class="fn">done:</span>
+    <span class="kw">EXIT</span></pre></div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-bottom:1rem;">Functions</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>func.cdnee</div>
+          <div class="code-body"><pre><span class="kw">FUNC</span> <span class="fn">square</span>, <span class="nm">n</span>:
+    <span class="kw">MUL</span> <span class="nm">r</span>, <span class="nm">n</span>, <span class="nm">n</span>
+    <span class="kw">RETURN</span> <span class="nm">r</span>
+<span class="kw">END</span>
+
+<span class="fn">main:</span>
+    <span class="kw">SET</span> <span class="nm">result</span>, <span class="kw">CALL</span> <span class="fn">square</span>, <span class="op">9</span>
+    <span class="kw">PRINTLN</span> <span class="nm">result</span>    <span class="cm">; → 81</span>
+    <span class="kw">EXIT</span></pre></div>
+        </div>
+
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-top:1.5rem;margin-bottom:1rem;">Error Handling</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>try.cdnee</div>
+          <div class="code-body"><pre><span class="kw">TRY</span>:
+    <span class="kw">SET</span> <span class="nm">r</span>, <span class="kw">CALL</span> <span class="fn">risky_fn</span>, <span class="op">42</span>
+<span class="kw">CATCH</span> <span class="nm">err</span>:
+    <span class="kw">PRINT</span> <span class="str">"Error: "</span>
+    <span class="kw">PRINTLN</span> <span class="nm">err</span>
+<span class="kw">END</span></pre></div>
+        </div>
+
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-top:1.5rem;margin-bottom:1rem;">Inline JIT Assembly</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>jit.cdnee</div>
+          <div class="code-body"><pre><span class="kw">JIT_COMPILE_INLINE</span> <span class="str">"""
+BITS 64
+mov rax, rdi
+imul rax, rdi
+ret
+"""</span>, <span class="nm">tag</span>=<span class="fn">sq</span>
+
+<span class="kw">SET</span> <span class="nm">result</span>, <span class="kw">CALL</span> <span class="fn">sq</span>, <span class="op">9</span>   <span class="cm">; → 81</span>
+<span class="kw">PRINTLN</span> <span class="nm">result</span></pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison Jumps Table -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:.5rem;">Conditional Jump Opcodes</h3>
+    <table class="op-table">
+      <thead><tr><th>Opcode</th><th>Syntax</th><th>Condition</th></tr></thead>
+      <tbody>
+        <tr><td>JE</td><td>JE label</td><td>Jump if left == right (after CMP)</td></tr>
+        <tr><td>JNE</td><td>JNE label</td><td>Jump if left != right</td></tr>
+        <tr><td>JLT</td><td>JLT label</td><td>Jump if left &lt; right</td></tr>
+        <tr><td>JGT</td><td>JGT label</td><td>Jump if left &gt; right</td></tr>
+        <tr><td>JLE</td><td>JLE label</td><td>Jump if left &lt;= right</td></tr>
+        <tr><td>JGE</td><td>JGE label</td><td>Jump if left &gt;= right</td></tr>
+        <tr><td>JMP</td><td>JMP label</td><td>Unconditional jump</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Auto-set Variables -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:.5rem;">Auto-Set Runtime Variables</h3>
+    <p class="section-body" style="margin-bottom:.5rem;">These variables are automatically set by the runtime after certain operations:</p>
+    <table class="var-table">
+      <thead><tr><th>Variable</th><th>Set By</th></tr></thead>
+      <tbody>
+        <tr><td>_last_offset</td><td>FIND</td></tr>
+        <tr><td>_found_offset</td><td>BIN_SEARCH, LIN_SEARCH</td></tr>
+        <tr><td>_checksum</td><td>CHECKSUM</td></tr>
+        <tr><td>_disasm</td><td>DISASM (when captured)</td></tr>
+        <tr><td>_dump</td><td>DUMP (when captured)</td></tr>
+        <tr><td>_bench_mean</td><td>BENCHMARK</td></tr>
+        <tr><td>_bench_min</td><td>BENCHMARK</td></tr>
+        <tr><td>_asm_size</td><td>ASM_SIZEOF</td></tr>
+        <tr><td>_reverted</td><td>PATCH_REVERT</td></tr>
+        <tr><td>_profile_ms</td><td>PROFILE_END</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- STDLIB -->
+<section id="stdlib">
+  <div class="container fade-in">
+    <p class="section-label">04 — Standard Library</p>
+    <h2 class="section-title">Tier-1 Standard Library</h2>
+    <p class="section-body">All Tier-1 operations run via the DNEE native engine when available, or fall back to pure Python. Every operation stores its result in the <strong>dest</strong> variable. No compilation step required.</p>
+
+    <div class="stdlib-grid">
+      <div class="stdlib-block">
+        <div class="stdlib-block-title">⚙️ Scalar Math</div>
+        <ul class="stdlib-ops">
+          <li><span>ADD dest, a, b</span> — a + b</li>
+          <li><span>SUB dest, a, b</span> — a − b</li>
+          <li><span>MUL dest, a, b</span> — a × b</li>
+          <li><span>DIV dest, a, b</span> — a ÷ b (integer when both ints)</li>
+          <li><span>MOD dest, a, b</span> — a mod b</li>
+          <li><span>POW dest, a, b</span> — a ^ b</li>
+          <li><span>ABS dest, a</span> — |a|</li>
+          <li><span>NEG dest, a</span> — −a</li>
+          <li><span>SIGN dest, a</span> — −1, 0, or 1</li>
+          <li><span>ISQRT dest, a</span> — floor(√a)</li>
+          <li><span>LOG2 / LOG10</span> — floor(log₂a), floor(log₁₀a)</li>
+          <li><span>MIN_VAL / MAX_VAL</span> — min/max of two values</li>
+          <li><span>CLAMP dest, val, lo, hi</span> — clamped value</li>
+          <li><span>CEIL_DIV / FLOOR_DIV / MULDIV / AVERAGE</span></li>
+        </ul>
+      </div>
+      <div class="stdlib-block">
+        <div class="stdlib-block-title">🔢 Number Theory</div>
+        <ul class="stdlib-ops">
+          <li><span>GCD dest, a, b</span> — greatest common divisor</li>
+          <li><span>LCM dest, a, b</span> — least common multiple</li>
+          <li><span>FACTORIAL dest, n</span> — n!</li>
+          <li><span>FIBONACCI dest, n</span> — F(n), 0-indexed</li>
+          <li><span>COLLATZ dest, n</span> — steps to reach 1</li>
+          <li><span>TOTIENT dest, n</span> — Euler's φ(n)</li>
+          <li><span>IS_PRIME dest, n</span> — 1 if prime</li>
+          <li><span>NEXT_PRIME dest, n</span> — smallest prime &gt; n</li>
+          <li><span>PREV_PRIME dest, n</span> — largest prime &lt; n</li>
+          <li><span>IS_PERFECT / IS_ABUNDANT / IS_DEFICIENT</span></li>
+        </ul>
+      </div>
+      <div class="stdlib-block">
+        <div class="stdlib-block-title">🔀 Bit Operations</div>
+        <ul class="stdlib-ops">
+          <li><span>POPCOUNT dest, n</span> — count set bits</li>
+          <li><span>NLZ dest, n</span> — leading zeros (64-bit)</li>
+          <li><span>NTZ dest, n</span> — trailing zeros</li>
+          <li><span>ROL64 dest, n, k</span> — rotate left 64-bit by k</li>
+          <li><span>ROR64 dest, n, k</span> — rotate right 64-bit by k</li>
+          <li><span>BIT_REV dest, n</span> — reverse all bits</li>
+          <li><span>BSWAP64 dest, n</span> — byte-swap (endian flip)</li>
+          <li><span>PARITY64 dest, n</span> — XOR of all bits</li>
+          <li><span>IS_POW2 / NEXT_POW2</span></li>
+        </ul>
+      </div>
+      <div class="stdlib-block">
+        <div class="stdlib-block-title">🔒 Safe Arithmetic</div>
+        <ul class="stdlib-ops">
+          <li><span>SAFE_ADD dest, a, b, flag</span> — overflow-detected add</li>
+          <li><span>SAFE_SUB dest, a, b, flag</span> — overflow-detected sub</li>
+          <li><span>SAFE_MUL dest, a, b, flag</span> — overflow-detected mul</li>
+          <li><span>DIVMOD quot, rem, a, b</span> — quotient and remainder</li>
+          <li style="color:var(--muted);font-size:.72rem;margin-top:.3rem;">flag = 1 on overflow, 0 otherwise</li>
+        </ul>
+      </div>
+      <div class="stdlib-block">
+        <div class="stdlib-block-title">#️⃣ Hashing &amp; Modular</div>
+        <ul class="stdlib-ops">
+          <li><span>HASH_FNV64 dest, data, len</span> — FNV-1a 64-bit hash</li>
+          <li><span>HASH_MURMUR64 dest, x</span> — Murmur-style 64-bit mix</li>
+          <li><span>ADDMOD64 / SUBMOD64 / MULMOD64</span> — (a ± b) mod m</li>
+          <li><span>POWMOD64 dest, a, b, m</span> — modular exponentiation</li>
+          <li><span>MODINV64 dest, a, m</span> — modular inverse (extended GCD)</li>
+        </ul>
+      </div>
+      <div class="stdlib-block">
+        <div class="stdlib-block-title">📊 Sort, Search &amp; Timing</div>
+        <ul class="stdlib-ops">
+          <li><span>SORT_NET4 arr</span> — optimal sorting network for 4 elements</li>
+          <li><span>BIN_SEARCH dest, arr, n, target</span> — binary search, -1 if not found</li>
+          <li><span>LIN_SEARCH dest, arr, n, target</span> — linear search</li>
+          <li><span>LOWER_BOUND dest, arr, n, target</span> — std::lower_bound equivalent</li>
+          <li><span>RDTSC_START / RDTSC_STOP</span> — cycle-accurate timing</li>
+          <li><span>CPUID dest</span> — CPU identification info</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Stdlib code example -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:1rem;">Stdlib Usage Example</h3>
+    <div class="code-box">
+      <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>stdlib_demo.cdnee</div>
+      <div class="code-body"><pre><span class="nm">@entry</span> <span class="fn">main</span>
+
+<span class="fn">main:</span>
+    <span class="cm">; Primality and number theory</span>
+    <span class="kw">IS_PRIME</span>   <span class="nm">p</span>, <span class="op">97</span>          <span class="cm">; p = 1</span>
+    <span class="kw">NEXT_PRIME</span> <span class="nm">q</span>, <span class="op">100</span>         <span class="cm">; q = 101</span>
+    <span class="kw">TOTIENT</span>    <span class="nm">t</span>, <span class="op">12</span>           <span class="cm">; t = 4</span>
+
+    <span class="cm">; Safe arithmetic with overflow detection</span>
+    <span class="kw">SAFE_MUL</span> <span class="nm">r</span>, <span class="op">999999999</span>, <span class="op">999999999</span>, <span class="nm">ov</span>
+    <span class="kw">CMP</span> <span class="nm">ov</span>, <span class="op">1</span>
+    <span class="kw">JE</span>  <span class="fn">overflow_handler</span>
+
+    <span class="cm">; Cycle-accurate timing</span>
+    <span class="kw">RDTSC_START</span> <span class="nm">t0</span>
+    <span class="kw">FIBONACCI</span>   <span class="nm">f</span>, <span class="op">40</span>
+    <span class="kw">RDTSC_STOP</span>  <span class="nm">t1</span>
+    <span class="kw">SUB</span> <span class="nm">cycles</span>, <span class="nm">t1</span>, <span class="nm">t0</span>
+    <span class="kw">PRINT</span> <span class="str">"Fib(40)="</span>
+    <span class="kw">PRINT</span> <span class="nm">f</span>
+    <span class="kw">PRINT</span> <span class="str">" cycles="</span>
+    <span class="kw">PRINTLN</span> <span class="nm">cycles</span>
+    <span class="kw">EXIT</span>
+
+<span class="fn">overflow_handler:</span>
+    <span class="kw">PRINTLN</span> <span class="str">"Overflow detected!"</span>
+    <span class="kw">EXIT</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- JIT / MEX -->
+<section id="jit">
+  <div class="container fade-in">
+    <p class="section-label">05 — JIT &amp; MEX Engine</p>
+    <h2 class="section-title">JIT Compilation &amp; Memory Control</h2>
+    <p class="section-body">Tier-2 gives you the full Machine Execution Engine (MEX). Compile inline NASM or .asm files into executable memory, benchmark them, patch them live, snapshot and restore, export to disk, and reload across sessions.</p>
+
+    <!-- Type System -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:2.5rem;margin-bottom:.5rem;">JIT Type System</h3>
+    <p class="section-body" style="margin-bottom:.5rem;">JIT functions require explicit type annotations to build the correct ctypes.CFUNCTYPE. Multiple arguments use colon-separated types.</p>
+    <div class="type-grid">
+      <div class="type-cell"><div class="type-name">i64</div><div class="type-ctype">c_int64</div><div class="type-note">Default for args &amp; return</div></div>
+      <div class="type-cell"><div class="type-name">u64</div><div class="type-ctype">c_uint64</div><div class="type-note">−1 wraps to 2⁶⁴−1</div></div>
+      <div class="type-cell"><div class="type-name">i32</div><div class="type-ctype">c_int32</div><div class="type-note">Truncated outside ±2GiB</div></div>
+      <div class="type-cell"><div class="type-name">u32</div><div class="type-ctype">c_uint32</div><div class="type-note">32-bit unsigned</div></div>
+      <div class="type-cell"><div class="type-name">i8 / u8</div><div class="type-ctype">c_int8 / c_uint8</div><div class="type-note">Wraps at 128 / 256</div></div>
+      <div class="type-cell"><div class="type-name">f64</div><div class="type-ctype">c_double</div><div class="type-note">Python float (64-bit)</div></div>
+      <div class="type-cell"><div class="type-name">f32</div><div class="type-ctype">c_float</div><div class="type-note">Narrowed from float</div></div>
+      <div class="type-cell"><div class="type-name">ptr</div><div class="type-ctype">c_void_p</div><div class="type-note">Raw memory address</div></div>
+      <div class="type-cell"><div class="type-name">bool</div><div class="type-ctype">c_bool</div><div class="type-note">0 / 1</div></div>
+      <div class="type-cell"><div class="type-name">void</div><div class="type-ctype">None</div><div class="type-note">Return type only</div></div>
+    </div>
+
+    <div class="callout" style="margin-top:1.5rem;">
+      <strong>Calling Convention (x86-64 System V ABI):</strong> Integer/pointer args in rdi, rsi, rdx, rcx, r8, r9. Float args in xmm0–xmm5. Integer return in rax. Float return in xmm0. Mixed-type functions use both register sets counted separately.
+    </div>
+
+    <!-- JIT Operations -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:1rem;">JIT Operations</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">①</div>
+        <div class="step-content">
+          <span class="step-tag">Compile</span>
+          <p class="step-title">JIT_COMPILE / JIT_COMPILE_INLINE</p>
+          <p class="step-desc">Assemble a .asm file or triple-quoted inline block into an executable memory region tagged with a name. Specify argtypes and rettype for the correct calling convention. Use <strong>overwrite=true</strong> to replace an existing region.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">②</div>
+        <div class="step-content">
+          <span class="step-tag">Batch / Count</span>
+          <p class="step-title">JIT_COMPILE_MANY / JIT_COUNTED / JIT_FN</p>
+          <p class="step-desc">Compile multiple assembly files in one call with JIT_COMPILE_MANY. JIT_COUNTED and JIT_FN wrap the compiled function with a call counter, accessible via CALL_STATS for profiling.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">③</div>
+        <div class="step-content">
+          <span class="step-tag">Export / Import</span>
+          <p class="step-title">EXPORT_BIN / IMPORT_BIN / CALL_BIN / BIN_CONTEXT</p>
+          <p class="step-desc">Serialize compiled JIT regions to disk as .bin files and reload them in future sessions — bypassing assembly overhead. CALL_BIN imports and calls in one step. BIN_CONTEXT scopes the lifetime to a block.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">④</div>
+        <div class="step-content">
+          <span class="step-tag">Memory</span>
+          <p class="step-title">FREEZE / THAW / SNAPSHOT / RESTORE / CLONE / COPY_ON_WRITE</p>
+          <p class="step-desc">Control the mutability and lifecycle of JIT regions. FREEZE prevents further patching. SNAPSHOT saves the current bytes; RESTORE reverts. CLONE duplicates a region. COPY_ON_WRITE creates a copy with specific bytes changed.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">⑤</div>
+        <div class="step-content">
+          <span class="step-tag">Patch</span>
+          <p class="step-title">PATCH_NOP / PATCH_INT64 / PATCH_FILL / PATCH_REPLACE / PATCH_BYTES</p>
+          <p class="step-desc">Overwrite bytes in live JIT regions. All patch operations are recorded in a patch history. Use PATCH_REVERT to undo N steps or PATCH_REVERT_ALL to restore the original. TRAMPOLINE inserts a jump redirect at an offset.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">⑥</div>
+        <div class="step-content">
+          <span class="step-tag">Inspect</span>
+          <p class="step-title">DISASM / DUMP / FIND / CHECKSUM / REGION_INFO / PATCH_HISTORY</p>
+          <p class="step-desc">Inspect live JIT regions. Disassemble bytes, hex-dump, search for byte patterns, compute CRC-32 checksums, view region address/size/permissions, and walk the full patch history.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">⑦</div>
+        <div class="step-content">
+          <span class="step-tag">Profile</span>
+          <p class="step-title">BENCHMARK / PROFILE_BLOCK / JIT_STATS / CACHE_STATS</p>
+          <p class="step-desc">BENCHMARK runs a function with warmup and timed iterations, reporting mean/min/max/stddev. PROFILE_BLOCK is a scoped timer. CACHE_WARM, CACHE_CLEAR, and CACHE_INVALIDATE manage the JIT code cache.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- JIT example -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:1rem;">JIT + Patching Example</h3>
+    <div class="code-box">
+      <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>jit_patch.cdnee</div>
+      <div class="code-body"><pre><span class="nm">@entry</span> <span class="fn">main</span>
+
+<span class="fn">main:</span>
+    <span class="cm">; Compile inline NASM with typed signature</span>
+    <span class="kw">JIT_COMPILE_INLINE</span> <span class="str">"""
+BITS 64
+mov  rax, rdi
+imul rax, rsi
+ret
+"""</span>, <span class="nm">tag</span>=<span class="fn">mul</span>, <span class="nm">argtypes</span>=<span class="op">i64:i64</span>, <span class="nm">rettype</span>=<span class="op">i64</span>
+
+    <span class="kw">SET</span> <span class="nm">r</span>, <span class="kw">CALL</span> <span class="fn">mul</span>, <span class="op">6</span>, <span class="op">7</span>
+    <span class="kw">PRINTLN</span> <span class="nm">r</span>              <span class="cm">; → 42</span>
+
+    <span class="cm">; Benchmark it</span>
+    <span class="kw">BENCHMARK</span> <span class="fn">mul</span>, <span class="op">6</span>, <span class="op">7</span>, <span class="nm">iterations</span>=<span class="op">1000000</span>, <span class="nm">warmup</span>=<span class="op">100</span>
+
+    <span class="cm">; Snapshot and inspect</span>
+    <span class="kw">SNAPSHOT</span> <span class="fn">mul</span>
+    <span class="kw">SET</span> <span class="nm">r_</span>, <span class="kw">DISASM</span>   <span class="fn">mul</span>, <span class="op">32</span>
+    <span class="kw">CHECKSUM</span> <span class="fn">mul</span>
+    <span class="kw">PRINTLN</span>  <span class="nm">_checksum</span>
+
+    <span class="cm">; NOP the imul instruction (bytes 3-9)</span>
+    <span class="kw">PATCH_NOP</span> <span class="fn">mul</span>, <span class="op">3</span>, <span class="op">4</span>
+
+    <span class="cm">; Revert the patch</span>
+    <span class="kw">PATCH_REVERT</span> <span class="fn">mul</span>, <span class="op">1</span>
+
+    <span class="cm">; Export for future use</span>
+    <span class="kw">EXPORT_BIN</span> <span class="str">"./cache"</span>
+    <span class="kw">JIT_RELEASE</span> <span class="fn">mul</span>
+    <span class="kw">EXIT</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FFI -->
+<section id="ffi">
+  <div class="container fade-in">
+    <p class="section-label">06 — Foreign Function Interface</p>
+    <h2 class="section-title">FFI — Native Library Bindings</h2>
+    <p class="section-body">The CDNEE FFI has two complementary halves: <strong>EXTERN file imports</strong> (.cdneef header files that add pure-CDNEE functions) and <strong>native symbol bindings</strong> (shared libraries loaded via ctypes).</p>
+
+    <div class="two-col" style="margin-top:2.5rem;">
+      <div>
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-bottom:1rem;">EXTERN — .cdneef Headers</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>import_header.cdnee</div>
+          <div class="code-body"><pre><span class="cm">; Import a function header</span>
+<span class="kw">EXTERN</span> <span class="str">"math_utils.cdneef"</span>
+
+<span class="cm">; Namespace prefix to avoid collisions</span>
+<span class="kw">EXTERN</span> <span class="str">"vec2.cdneef"</span>, <span class="nm">alias_prefix</span>=<span class="fn">v2_</span>
+<span class="kw">EXTERN</span> <span class="str">"vec3.cdneef"</span>, <span class="nm">alias_prefix</span>=<span class="fn">v3_</span>
+
+<span class="kw">SET</span> <span class="nm">r</span>, <span class="kw">CALL</span> <span class="fn">v2_add</span>, <span class="op">10</span>, <span class="op">20</span>
+<span class="kw">SET</span> <span class="nm">r</span>, <span class="kw">CALL</span> <span class="fn">v3_add</span>, <span class="op">1</span>, <span class="op">2</span>, <span class="op">3</span></pre></div>
+        </div>
+
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-top:1.5rem;margin-bottom:1rem;">EXTERN_FUNC — Native Symbols</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>native_bind.cdnee</div>
+          <div class="code-body"><pre><span class="cm">; Bind libm sqrt</span>
+<span class="kw">EXTERN_FUNC</span> <span class="str">"m"</span>, <span class="nm">func</span>=<span class="fn">sqrt</span>, <span class="nm">alias</span>=<span class="fn">fsqrt</span>,
+    <span class="nm">argtypes</span>=<span class="op">f64</span>, <span class="nm">rettype</span>=<span class="op">f64</span>
+
+<span class="kw">SET</span> <span class="nm">r</span>, <span class="kw">CALL</span> <span class="fn">fsqrt</span>, <span class="op">144.0</span>
+<span class="kw">PRINTLN</span> <span class="nm">r</span>   <span class="cm">; → 12.0</span>
+
+<span class="cm">; Windows API — stdcall</span>
+<span class="kw">EXTERN</span> <span class="str">"kernel32"</span>, <span class="nm">func</span>=<span class="fn">Sleep</span>,
+    <span class="nm">alias</span>=<span class="fn">sleep_ms</span>, <span class="nm">argtypes</span>=<span class="op">u32</span>,
+    <span class="nm">rettype</span>=<span class="op">void</span>, <span class="nm">cdecl</span>=<span class="op">false</span></pre></div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-bottom:1rem;">Portable Math Example</h3>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>portable_math.cdnee</div>
+          <div class="code-body"><pre><span class="nm">@entry</span> <span class="fn">main</span>
+
+<span class="kw">EXTERN_FUNC</span> <span class="str">"c"</span>, <span class="nm">func</span>=<span class="fn">abs</span>,  <span class="nm">alias</span>=<span class="fn">iabs</span>,
+    <span class="nm">argtypes</span>=<span class="op">i32</span>, <span class="nm">rettype</span>=<span class="op">i32</span>
+<span class="kw">EXTERN_FUNC</span> <span class="str">"m"</span>, <span class="nm">func</span>=<span class="fn">pow</span>,  <span class="nm">alias</span>=<span class="fn">fpow</span>,
+    <span class="nm">argtypes</span>=<span class="op">f64:f64</span>, <span class="nm">rettype</span>=<span class="op">f64</span>
+
+<span class="fn">main:</span>
+    <span class="kw">SET</span> <span class="nm">a</span>, <span class="kw">CALL</span> <span class="fn">iabs</span>, <span class="op">-123</span>
+    <span class="kw">PRINTLN</span> <span class="nm">a</span>         <span class="cm">; → 123</span>
+
+    <span class="kw">SET</span> <span class="nm">b</span>, <span class="kw">CALL</span> <span class="fn">fpow</span>, <span class="op">3.0</span>, <span class="op">8.0</span>
+    <span class="kw">PRINTLN</span> <span class="nm">b</span>         <span class="cm">; → 6561.0</span>
+    <span class="kw">EXIT</span></pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Short lib names -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:1rem;">Portable Short Library Names</h3>
+    <div class="lib-grid">
+      <div class="lib-box">
+        <div class="lib-os">Linux / macOS (POSIX)</div>
+        <ul class="lib-list">
+          <li><span>c</span>libc.so.6</li>
+          <li><span>m</span>libm.so.6</li>
+          <li><span>pthread</span>libpthread.so.0</li>
+          <li><span>dl</span>libdl.so.2</li>
+          <li><span>z</span>libz.so.1</li>
+          <li><span>ssl</span>libssl.so</li>
+          <li><span>crypto</span>libcrypto.so</li>
+          <li><span>stdc++</span>libstdc++.so.6</li>
+          <li><span>opengl</span>libGL.so.1</li>
+          <li><span>x11</span>libX11.so.6</li>
+        </ul>
+      </div>
+      <div class="lib-box">
+        <div class="lib-os">Windows</div>
+        <ul class="lib-list">
+          <li><span>c / m</span>msvcrt.dll</li>
+          <li><span>kernel32</span>kernel32.dll</li>
+          <li><span>user32</span>user32.dll</li>
+          <li><span>ntdll</span>ntdll.dll</li>
+          <li><span>gdi32</span>gdi32.dll</li>
+          <li><span>shell32</span>shell32.dll</li>
+          <li><span>ws2_32</span>ws2_32.dll</li>
+          <li><span>d3d11</span>d3d11.dll</li>
+          <li><span>d3d12</span>d3d12.dll</li>
+          <li><span>opengl</span>opengl32.dll</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Path Resolution for .cdneef:</strong> (1) Absolute path — used as-is. (2) Relative to the directory of the current .cdnee source file. (3) Relative to the current working directory. Circular imports are detected and silently ignored.
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- CLI -->
+<section id="cli">
+  <div class="container fade-in">
+    <p class="section-label">07 — CLI &amp; Compiler</p>
+    <h2 class="section-title">CLI &amp; Compiler Reference</h2>
+    <p class="section-body">CDNEE ships two command-line tools: <strong>CDNEE</strong> (the interpreter / REPL) and <strong>CDNEE-CC</strong> (the ahead-of-time compiler). Both are installed alongside the package.</p>
+
+    <!-- DNEE_CLI flags -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--accent);margin-top:2.5rem;margin-bottom:.5rem;">CDNEE — Interpreter Flags</h3>
+    <p class="section-body" style="margin-bottom:.8rem;">usage: <code style="color:var(--accent2)">CDNEE [OPTIONS] [file.cdnee]</code></p>
+    <div class="cli-flags">
+      <div class="cli-flag"><div class="flag">-h, --help</div><div class="desc">Show help and exit</div></div>
+      <div class="cli-flag"><div class="flag">-v, --verbose</div><div class="desc">Verbose output during execution</div></div>
+      <div class="cli-flag"><div class="flag">-V, --version</div><div class="desc">Print runtime version</div></div>
+      <div class="cli-flag"><div class="flag">--no-dnee</div><div class="desc">Disable JIT; use software math fallback only</div></div>
+      <div class="cli-flag"><div class="flag">--lex</div><div class="desc">Tokenise source and print token stream</div></div>
+      <div class="cli-flag"><div class="flag">--ast</div><div class="desc">Parse source and print AST</div></div>
+      <div class="cli-flag"><div class="flag">--fmt</div><div class="desc">Pretty-format source</div></div>
+      <div class="cli-flag"><div class="flag">--check</div><div class="desc">Syntax check only — no execution</div></div>
+      <div class="cli-flag"><div class="flag">--disasm TAG</div><div class="desc">Disassemble region TAG after run</div></div>
+      <div class="cli-flag"><div class="flag">--dump TAG</div><div class="desc">Hex-dump region TAG after run</div></div>
+      <div class="cli-flag"><div class="flag">--stats</div><div class="desc">Print JIT and cache statistics after run</div></div>
+      <div class="cli-flag"><div class="flag">--bench TAG</div><div class="desc">Benchmark region TAG after run</div></div>
+      <div class="cli-flag"><div class="flag">--bench-args [ARGS...]</div><div class="desc">Arguments to pass when benchmarking</div></div>
+      <div class="cli-flag"><div class="flag">--bench-iters N</div><div class="desc">Benchmark iteration count (default 100000)</div></div>
+      <div class="cli-flag"><div class="flag">--strict-wx</div><div class="desc">Enforce W^X memory protection</div></div>
+      <div class="cli-flag"><div class="flag">--workers N</div><div class="desc">JIT thread-pool size (default 4)</div></div>
+      <div class="cli-flag"><div class="flag">--math PATH</div><div class="desc">Path to custom math.asm</div></div>
+      <div class="cli-flag"><div class="flag">--out FILE</div><div class="desc">Redirect PRINT/PRINTLN output to FILE</div></div>
+      <div class="cli-flag"><div class="flag">--repl</div><div class="desc">Force REPL mode</div></div>
+      <div class="cli-flag"><div class="flag">--os-sim</div><div class="desc">Run in OS simulation mode — verbose OS opcode feedback</div></div>
+      <div class="cli-flag"><div class="flag">--os-state</div><div class="desc">Dump _os_state dict after script execution</div></div>
+      <div class="cli-flag"><div class="flag">--os-vga</div><div class="desc">Render simulated 80×25 VGA text buffer after execution</div></div>
+      <div class="cli-flag"><div class="flag">--os-image FILE</div><div class="desc">Write accumulated OS_DB/DW/DD/DQ image bytes to FILE</div></div>
+    </div>
+
+    <!-- CDNEE-CC flags -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--accent);margin-top:3rem;margin-bottom:.5rem;">CDNEE-CC — Compiler Flags</h3>
+    <p class="section-body" style="margin-bottom:.8rem;">usage: <code style="color:var(--accent2)">CDNEE-CC [OPTIONS] [source.cdnee]</code></p>
+    <div class="cli-flags">
+      <div class="cli-flag"><div class="flag">-o DIR, --output DIR</div><div class="desc">Output directory for compiled files</div></div>
+      <div class="cli-flag"><div class="flag">--name NAME</div><div class="desc">Base name for output files</div></div>
+      <div class="cli-flag"><div class="flag">--exe</div><div class="desc">Produce a standalone executable (shared-lib target)</div></div>
+      <div class="cli-flag"><div class="flag">--flat</div><div class="desc">[OS v2.4] Compile to flat binary — nasm -f bin, no linker (MBR / COM)</div></div>
+      <div class="cli-flag"><div class="flag">--os</div><div class="desc">[OS v2.4] Compile to freestanding ELF64 kernel</div></div>
+      <div class="cli-flag"><div class="flag">--abi {sysv,win64,auto}</div><div class="desc">Select calling convention ABI</div></div>
+      <div class="cli-flag"><div class="flag">--asm-only</div><div class="desc">Stop after NASM generation — emit .asm only</div></div>
+      <div class="cli-flag"><div class="flag">--show-asm</div><div class="desc">Print generated NASM to stdout</div></div>
+      <div class="cli-flag"><div class="flag">--no-export-all</div><div class="desc">Export only the @entry symbol</div></div>
+      <div class="cli-flag"><div class="flag">--keep-obj</div><div class="desc">Keep the intermediate object file (.o)</div></div>
+      <div class="cli-flag"><div class="flag">--load-test</div><div class="desc">ctypes smoke-test the compiled output after build</div></div>
+      <div class="cli-flag"><div class="flag">--list-exports</div><div class="desc">List all exported symbols and exit</div></div>
+      <div class="cli-flag"><div class="flag">--run</div><div class="desc">Run the executable immediately after compiling (implies --exe)</div></div>
+      <div class="cli-flag"><div class="flag">--run-args ...</div><div class="desc">Arguments for the executable when --run is used (after --)</div></div>
+      <div class="cli-flag"><div class="flag">--opt LEVEL</div><div class="desc">Optimization: 0=none 1=peephole 2=peephole+strength (default: 0)</div></div>
+      <div class="cli-flag"><div class="flag">--nasm-flag FLAG</div><div class="desc">Pass extra flag to NASM</div></div>
+      <div class="cli-flag"><div class="flag">--link-flag FLAG</div><div class="desc">Pass extra flag to the linker</div></div>
+      <div class="cli-flag"><div class="flag">--load-addr ADDR</div><div class="desc">[--os] Kernel physical load address (default: 0x100000 = 1 MiB). Accepts decimal or 0x hex.</div></div>
+      <div class="cli-flag"><div class="flag">--ld-script FILE</div><div class="desc">[--os] Custom LD linker script (auto-generated if omitted)</div></div>
+      <div class="cli-flag"><div class="flag">--qemu</div><div class="desc">After compiling, launch QEMU to run the result</div></div>
+      <div class="cli-flag"><div class="flag">--qemu-args ...</div><div class="desc">Extra arguments forwarded to QEMU (after --)</div></div>
+      <div class="cli-flag"><div class="flag">--qemu-bin BIN</div><div class="desc">QEMU binary to use (default: qemu-system-i386 for flat, qemu-system-x86_64 for os)</div></div>
+    </div>
+
+    <!-- CDNEE-CC examples -->
+    <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-top:2.5rem;margin-bottom:1rem;">CDNEE-CC Usage Examples</h3>
+    <div class="code-box">
+      <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>compiler examples</div>
+      <div class="code-body"><pre><span class="cm"># Standard modes</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span>                  <span class="cm"># compile to .so/.dll</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">-o</span> <span class="str">dist/</span>         <span class="cm"># output to dist/</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">--asm-only</span>       <span class="cm"># emit NASM only</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">--show-asm</span>       <span class="cm"># print NASM to stdout</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">--load-test</span>      <span class="cm"># compile + ctypes smoke-test</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">--list-exports</span>   <span class="cm"># show exported symbols</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">--exe</span>            <span class="cm"># compile to executable</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">--exe --run</span>      <span class="cm"># compile + run immediately</span>
+<span class="nm">CDNEE-CC</span> <span class="str">program.cdnee</span> <span class="kw">--opt</span> <span class="op">2</span>          <span class="cm"># peephole + strength reduction</span>
+
+<span class="cm"># OS / flat-binary modes (v2.4)</span>
+<span class="nm">CDNEE-CC</span> <span class="str">boot.cdnee</span>   <span class="kw">--flat</span>                   <span class="cm"># MBR / flat binary</span>
+<span class="nm">CDNEE-CC</span> <span class="str">kernel.cdnee</span> <span class="kw">--os</span>                     <span class="cm"># freestanding ELF64 kernel</span>
+<span class="nm">CDNEE-CC</span> <span class="str">kernel.cdnee</span> <span class="kw">--os --load-addr</span> <span class="op">1M</span>      <span class="cm"># load at 1 MiB</span>
+<span class="nm">CDNEE-CC</span> <span class="str">kernel.cdnee</span> <span class="kw">--os --ld-script</span> <span class="str">k.ld</span>   <span class="cm"># custom linker script</span>
+<span class="nm">CDNEE-CC</span> <span class="str">boot.cdnee</span>   <span class="kw">--flat --qemu</span>            <span class="cm"># flat binary + QEMU</span>
+<span class="nm">CDNEE-CC</span> <span class="str">kernel.cdnee</span> <span class="kw">--os --qemu</span>              <span class="cm"># kernel + QEMU -kernel</span></pre></div>
+    </div>
+
+    <!-- REPL -->
+    <h3 style="font-family:var(--heading);font-size:1.1rem;color:var(--accent);margin-top:3rem;margin-bottom:1rem;">REPL Commands</h3>
+    <div class="code-box">
+      <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>CDNEE interactive session</div>
+      <div class="code-body"><pre><span class="cm">$ CDNEE --repl</span>
+
+<span class="nm">DNEE&gt;</span> <span class="kw">RUN</span> <span class="str">program.cdnee</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">EXEC</span> <span class="kw">SET</span> <span class="nm">x</span>, <span class="op">42</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">EXEC</span> <span class="kw">PRINTLN</span> <span class="nm">x</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">DISASM</span> <span class="fn">sq</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">DUMP</span> <span class="fn">sq</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">JIT_STATS</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">CACHE_STATS</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">REGION_INFO</span> <span class="fn">sq</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">BENCHMARK</span> <span class="fn">sq</span> <span class="op">9</span> <span class="nm">iterations</span>=<span class="op">500000</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">VARS</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">HELP</span>
+<span class="nm">DNEE&gt;</span> <span class="kw">EXIT</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- OS DEVELOPMENT -->
+<section id="os">
+  <div class="container fade-in">
+    <p class="section-label">08 — OS Development (v2.4)</p>
+    <h2 class="section-title">OS Development Tier</h2>
+    <p class="section-body">CDNEE v2.4 adds a complete OS-development tier. Write bootloaders, kernels, and bare-metal programs using high-level OS opcodes that compile to flat binaries or freestanding ELF64. The same source runs in the interpreter's simulation mode for unit-testing OS logic without QEMU.</p>
+
+    <!-- Two modes -->
+    <div class="tiers" style="margin-top:2.5rem;">
+      <div class="tier-box">
+        <div class="tier-label t1">Flat Binary — MBR / COM</div>
+        <div class="tier-title">Real-mode Bootloader</div>
+        <ul class="tier-items">
+          <li>OS_BITS 16 — real-mode code</li>
+          <li>OS_ORG 0x7C00 — BIOS loads MBR here</li>
+          <li>OS_BOOT_SIG — pads to 510 bytes, appends 0xAA55</li>
+          <li>Compiled with: <code style="color:var(--accent2)">CDNEE-CC boot.cdnee --flat</code></li>
+          <li>Tested with: <code style="color:var(--accent2)">qemu-system-i386 -drive format=raw,file=boot.bin</code></li>
+          <li>Result: exact 512-byte MBR image, no headers</li>
+        </ul>
+      </div>
+      <div class="tier-box">
+        <div class="tier-label t2">ELF64 Kernel — Long Mode</div>
+        <div class="tier-title">Freestanding Kernel</div>
+        <ul class="tier-items">
+          <li>OS_BITS 64 — long-mode code</li>
+          <li>OS_MULTIBOOT [flags] — Multiboot 1 header for GRUB</li>
+          <li>OS_GLOBAL kernel_start — entry exported to linker</li>
+          <li>Compiled with: <code style="color:var(--accent2)">CDNEE-CC kernel.cdnee --os</code></li>
+          <li>Tested with: <code style="color:var(--accent2)">qemu-system-x86_64 -kernel kernel.elf</code></li>
+          <li>Custom linker script supported via <code style="color:var(--accent2)">--ld-script</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- OS Hello World -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:1rem;">Hello from the Bootloader</h3>
+    <div class="two-col">
+      <div>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>hello_mbr.cdnee</div>
+          <div class="code-body"><pre><span class="cm">; Minimal x86 real-mode MBR</span>
+<span class="cm">; Prints "Hi OS!" via BIOS int 0x10</span>
+
+<span class="kw">OS_BITS</span> <span class="op">16</span>
+<span class="kw">OS_ORG</span>  <span class="op">0x7C00</span>
+
+<span class="kw">OS_CLI</span>
+<span class="kw">OS_STI</span>
+
+<span class="kw">JIT_COMPILE_INLINE</span> <span class="fn">greet_bios</span>
+<span class="str">"""
+    mov  si, msg
+.loop:
+    lodsb
+    or   al, al
+    jz   .done
+    mov  ah, 0x0E
+    int  0x10
+    jmp  .loop
+.done:
+    hlt
+msg: db "Hi OS!", 13, 10, 0
+"""</span> <span class="nm">tag</span>=<span class="fn">greet_bios</span>
+
+<span class="kw">CALL</span> <span class="fn">greet_bios</span>, <span class="op">0</span>
+<span class="kw">OS_HLT</span>
+<span class="kw">OS_BOOT_SIG</span>    <span class="cm">; pad + 0xAA55</span></pre></div>
+        </div>
+      </div>
+      <div>
+        <div class="code-box">
+          <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>kernel.cdnee</div>
+          <div class="code-body"><pre><span class="cm">; Freestanding 64-bit kernel</span>
+
+<span class="kw">OS_BITS</span> <span class="op">64</span>
+<span class="kw">OS_MULTIBOOT</span> <span class="op">0x00000003</span>
+
+<span class="kw">OS_GLOBAL</span> <span class="fn">kernel_start</span>
+
+<span class="fn">kernel_start:</span>
+    <span class="kw">OS_CLI</span>
+    <span class="kw">OS_VGA_CLEAR</span> <span class="op">0x0F</span>        <span class="cm">; white on black</span>
+    <span class="kw">OS_VGA_PUTS</span> <span class="op">0</span>, <span class="op">0</span>,
+        <span class="str">"CDNEE Kernel v2.4"</span>, <span class="op">0x0F</span>
+    <span class="kw">OS_SERIAL_INIT</span> <span class="op">0x3F8</span>, <span class="op">115200</span>
+    <span class="kw">OS_SERIAL_PUTS</span> <span class="op">0x3F8</span>,
+        <span class="str">"Kernel alive\r\n"</span>
+    <span class="kw">OS_HLT</span></pre></div>
+        </div>
+        <div class="callout" style="margin-top:1rem;">
+          <strong>Simulation mode:</strong> All OS opcodes also work in the interpreter. Use <code style="color:var(--accent2)">--os-sim --os-vga</code> to test OS logic without QEMU. Inspect <code style="color:var(--accent2)">interp._os_state</code> for VGA buffer, serial log, and memory allocator state.
+        </div>
+      </div>
+    </div>
+
+    <!-- OS Opcode Reference -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:1rem;">OS Opcode Reference</h3>
+
+    <p style="font-family:var(--heading);font-size:.85rem;color:var(--accent3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;">Section / Layout</p>
+    <table class="op-table" style="margin-top:0;">
+      <thead><tr><th>Opcode</th><th>Syntax</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>OS_BITS</td><td>OS_BITS 16|32|64</td><td>Set NASM instruction width — must be first in flat sources</td></tr>
+        <tr><td>OS_ORG</td><td>OS_ORG addr</td><td>Set origin address (NASM ORG). 0x7C00 for MBR, 0x0100 for COM.</td></tr>
+        <tr><td>OS_SECTION</td><td>OS_SECTION ".text"</td><td>Switch assembly section (OS mode only; no-op in flat)</td></tr>
+        <tr><td>OS_GLOBAL</td><td>OS_GLOBAL sym</td><td>Export symbol (NASM global directive)</td></tr>
+        <tr><td>OS_ALIGN</td><td>OS_ALIGN n [, fill]</td><td>Align to power-of-two boundary, fill gaps (default 0x00)</td></tr>
+        <tr><td>OS_TIMES</td><td>OS_TIMES count, byte</td><td>NASM TIMES directive — repeat byte value count times</td></tr>
+        <tr><td>OS_BOOT_SIG</td><td>OS_BOOT_SIG</td><td>Pad to 510 bytes + emit 0xAA55 boot signature. Must be last in MBR.</td></tr>
+        <tr><td>OS_MULTIBOOT</td><td>OS_MULTIBOOT [flags]</td><td>Emit Multiboot 1 header (magic + flags + checksum) for GRUB</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-family:var(--heading);font-size:.85rem;color:var(--accent3);letter-spacing:.1em;text-transform:uppercase;margin-top:2rem;margin-bottom:.5rem;">CPU Control &amp; Interrupts</p>
+    <table class="op-table" style="margin-top:0;">
+      <thead><tr><th>Opcode</th><th>Syntax</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>OS_CLI</td><td>OS_CLI</td><td>Clear interrupt flag (disable hardware IRQs)</td></tr>
+        <tr><td>OS_STI</td><td>OS_STI</td><td>Set interrupt flag (enable hardware IRQs)</td></tr>
+        <tr><td>OS_HLT</td><td>OS_HLT</td><td>Halt until next interrupt — generates hlt in a loop</td></tr>
+        <tr><td>OS_NOP</td><td>OS_NOP</td><td>Emit a single NOP instruction (timing padding)</td></tr>
+        <tr><td>OS_IRET</td><td>OS_IRET [bits]</td><td>Interrupt return — iretq (64-bit) or iret (16/32-bit)</td></tr>
+        <tr><td>OS_RING</td><td>OS_RING 0|3</td><td>Declare privilege ring for documentation/codegen hints</td></tr>
+        <tr><td>OS_SET_ISR</td><td>OS_SET_ISR vector, handler</td><td>Dynamically patch running IDT entry at vector to handler</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-family:var(--heading);font-size:.85rem;color:var(--accent3);letter-spacing:.1em;text-transform:uppercase;margin-top:2rem;margin-bottom:.5rem;">Hardware I/O &amp; VGA &amp; Serial</p>
+    <table class="op-table" style="margin-top:0;">
+      <thead><tr><th>Opcode</th><th>Syntax</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>OS_OUTB</td><td>OS_OUTB port, val</td><td>Write byte to x86 I/O port</td></tr>
+        <tr><td>OS_OUTW</td><td>OS_OUTW port, val</td><td>Write word to x86 I/O port</td></tr>
+        <tr><td>OS_INB</td><td>OS_INB dest, port</td><td>Read byte from I/O port into variable</td></tr>
+        <tr><td>OS_INW</td><td>OS_INW dest, port</td><td>Read word from I/O port into variable</td></tr>
+        <tr><td>OS_VGA_CLEAR</td><td>OS_VGA_CLEAR [attr]</td><td>Fill 80×25 VGA text screen with spaces and attribute byte</td></tr>
+        <tr><td>OS_VGA_PUTC</td><td>OS_VGA_PUTC col, row, char, attr</td><td>Write one character at (col, row) with attribute</td></tr>
+        <tr><td>OS_VGA_PUTS</td><td>OS_VGA_PUTS col, row, str, attr</td><td>Write NUL-terminated string starting at (col, row)</td></tr>
+        <tr><td>OS_SERIAL_INIT</td><td>OS_SERIAL_INIT port, baud</td><td>Initialise 16550-compatible UART at I/O port</td></tr>
+        <tr><td>OS_SERIAL_PUTC</td><td>OS_SERIAL_PUTC port, char</td><td>Transmit one byte — blocks until TX FIFO has space</td></tr>
+        <tr><td>OS_SERIAL_PUTS</td><td>OS_SERIAL_PUTS port, str</td><td>Transmit a NUL-terminated string</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-family:var(--heading);font-size:.85rem;color:var(--accent3);letter-spacing:.1em;text-transform:uppercase;margin-top:2rem;margin-bottom:.5rem;">Descriptor Tables, Paging &amp; Memory</p>
+    <table class="op-table" style="margin-top:0;">
+      <thead><tr><th>Opcode</th><th>Syntax</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>OS_GDT_ENTRY</td><td>OS_GDT_ENTRY base, limit, access, flags</td><td>Emit 8-byte GDT segment descriptor inline</td></tr>
+        <tr><td>OS_IDT_ENTRY</td><td>OS_IDT_ENTRY offset, selector, type_attr</td><td>Emit 8-byte IDT gate descriptor</td></tr>
+        <tr><td>OS_LGDT</td><td>OS_LGDT gdtr_label</td><td>Load GDT register</td></tr>
+        <tr><td>OS_LIDT</td><td>OS_LIDT idtr_label</td><td>Load IDT register</td></tr>
+        <tr><td>OS_MAP_PAGE</td><td>OS_MAP_PAGE virt, phys, flags</td><td>Map one 4 KiB page (flags: 0x1=present, 0x2=write, 0x4=user)</td></tr>
+        <tr><td>OS_UNMAP_PAGE</td><td>OS_UNMAP_PAGE virt</td><td>Unmap page and flush TLB entry (INVLPG)</td></tr>
+        <tr><td>OS_PHYS_ALLOC</td><td>OS_PHYS_ALLOC dest, pages</td><td>Simulate allocating pages consecutive 4 KiB frames</td></tr>
+        <tr><td>OS_PHYS_FREE</td><td>OS_PHYS_FREE addr, pages</td><td>Release physical frames</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-family:var(--heading);font-size:.85rem;color:var(--accent3);letter-spacing:.1em;text-transform:uppercase;margin-top:2rem;margin-bottom:.5rem;">Raw Data Directives</p>
+    <table class="op-table" style="margin-top:0;">
+      <thead><tr><th>Opcode</th><th>Syntax</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>OS_DB</td><td>OS_DB b1 [, b2, ...]</td><td>Emit byte(s) — strings supported: OS_DB "Hello", 0</td></tr>
+        <tr><td>OS_DW</td><td>OS_DW w1 [, w2, ...]</td><td>Emit 16-bit little-endian word(s)</td></tr>
+        <tr><td>OS_DD</td><td>OS_DD d1 [, d2, ...]</td><td>Emit 32-bit dword(s)</td></tr>
+        <tr><td>OS_DQ</td><td>OS_DQ q1 [, q2, ...]</td><td>Emit 64-bit qword(s) — supports label references</td></tr>
+      </tbody>
+    </table>
+
+    <!-- QEMU quick-start -->
+    <h3 style="font-family:var(--heading);font-size:1.2rem;color:var(--text);margin-top:3rem;margin-bottom:1rem;">Running in QEMU</h3>
+    <div class="code-box">
+      <div class="code-header"><span class="code-dot d1"></span><span class="code-dot d2"></span><span class="code-dot d3"></span>qemu workflow</div>
+      <div class="code-body"><pre><span class="cm"># ── Flat binary (MBR bootloader) ────────────────────────────────────</span>
+<span class="nm">CDNEE-CC</span> <span class="str">hello_mbr.cdnee</span> <span class="kw">--flat</span>
+<span class="cm"># Produces hello_mbr.bin — exactly 512 bytes</span>
+
+<span class="nm">qemu-system-i386</span> <span class="kw">-drive</span> <span class="nm">format</span>=<span class="str">raw</span>,<span class="nm">file</span>=<span class="str">hello_mbr.bin</span> <span class="kw">-nographic</span>
+<span class="nm">qemu-system-i386</span> <span class="kw">-drive</span> <span class="nm">format</span>=<span class="str">raw</span>,<span class="nm">file</span>=<span class="str">hello_mbr.bin</span> <span class="kw">-serial stdio</span>
+
+<span class="cm"># ── ELF64 kernel (Multiboot) ─────────────────────────────────────────</span>
+<span class="nm">CDNEE-CC</span> <span class="str">kernel.cdnee</span> <span class="kw">--os --load-addr</span> <span class="op">0x100000</span>
+<span class="cm"># Produces kernel.elf — boot with GRUB or QEMU -kernel</span>
+
+<span class="nm">qemu-system-x86_64</span> <span class="kw">-kernel</span> <span class="str">kernel.elf</span> <span class="kw">-serial stdio -nographic</span>
+
+<span class="cm"># ── Inspection ────────────────────────────────────────────────────────</span>
+<span class="nm">xxd</span> <span class="str">hello_mbr.bin</span> | <span class="nm">tail</span> <span class="kw">-2</span>           <span class="cm"># check boot signature 55 AA</span>
+<span class="nm">ndisasm</span> <span class="kw">-b</span> <span class="op">16</span> <span class="str">hello_mbr.bin</span> | <span class="nm">head</span> <span class="kw">-40</span> <span class="cm"># disassemble MBR</span>
+<span class="nm">readelf</span> <span class="kw">-S</span> <span class="str">kernel.elf</span>                  <span class="cm"># ELF sections</span>
+<span class="nm">objdump</span> <span class="kw">-d</span> <span class="str">kernel.elf</span> | <span class="nm">head</span> <span class="kw">-80</span>       <span class="cm"># disassemble .text</span>
+
+<span class="cm"># ── Interpreter simulation (no QEMU needed) ───────────────────────────</span>
+<span class="nm">CDNEE</span> <span class="kw">--os-sim --os-vga --os-state</span> <span class="str">kernel.cdnee</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FILE EXTENSIONS -->
+<section>
+  <div class="container fade-in">
+    <p class="section-label">09 — File Types</p>
+    <h2 class="section-title">File Extensions</h2>
+    <p class="section-body">CDNEE uses four file types that interoperate cleanly across the toolchain.</p>
+    <div class="cards" style="margin-top:2rem;">
+      <div class="card">
+        <span class="card-icon">📄</span>
+        <p class="card-title">.cdnee</p>
+        <p class="card-body">CDNEE source program. Plain UTF-8 text. Entry point declared with @entry or defaults to the top of the file. Executed by DNEE_CLI or the Python API.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">📋</span>
+        <p class="card-title">.cdneef</p>
+        <p class="card-body">CDNEE function definition file. Contains only FUNC definitions and optional EXTERN imports. Imported into programs with EXTERN. Supports alias_prefix for namespacing.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">⚙️</span>
+        <p class="card-title">.asm</p>
+        <p class="card-body">NASM assembly source loaded by JIT_COMPILE. Must begin with BITS 64 for x86-64 code. Uses System V AMD64 calling convention by default.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">💾</span>
+        <p class="card-title">.bin</p>
+        <p class="card-body">Exported compiled binary region. Written by EXPORT_BIN, loaded by IMPORT_BIN or CALL_BIN. Bypasses the assembly step on subsequent runs — ready to execute directly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- VERSIONS -->
+<section id="versions">
+  <div class="container fade-in">
+    <p class="section-label">10 — Version History</p>
+    <h2 class="section-title">Version History</h2>
+    <p class="section-body">CDNEE has evolved rapidly since its initial release. Each version adds significant capabilities to the execution engine and language surface.</p>
+    <table class="ver-table">
+      <thead><tr><th>Version</th><th>Notable Changes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>v1.0</td>
+          <td>OS development tier — CDNEE-CC compiler with <code style="color:var(--accent2)">--flat</code> (MBR/COM) and <code style="color:var(--accent2)">--os</code> (ELF64 kernel) modes; OS opcodes (OS_BITS, OS_ORG, OS_VGA_*, OS_SERIAL_*, OS_GDT_ENTRY, OS_IDT_ENTRY, OS_MAP_PAGE, OS_PHYS_ALLOC, OS_DB/DW/DD/DQ, OS_BOOT_SIG, OS_MULTIBOOT); QEMU integration; interpreter simulation mode (--os-sim, --os-state, --os-vga, --os-image)</td>
+        </tr>
+        <tr>
+          <td>v1.0</td>
+          <td>ExternFileNode, ExternSymNode, ExternLibNode; CDNEE_CTYPES_MAP; _source_dir resolution; full FFI guide with .cdneef header imports and alias_prefix namespacing</td>
+        </tr>
+        <tr>
+          <td>v1.0</td>
+          <td>Dot-label support (.name:) following NASM/GAS convention; Lexer fixes FIX-1 through FIX-5; keyword label-peek disambiguation</td>
+        </tr>
+        <tr>
+          <td>v1.0</td>
+          <td>JitCompileNode argtypes/rettype fields; DneeCallNode; full type system with i8/u8/i16/u16/i32/u32/i64/u64/f32/f64/ptr/bool/void</td>
+        </tr>
+        <tr>
+          <td>v1.0</td>
+          <td>Tier-2 JIT/MEX engine; binary export/import (EXPORT_BIN, IMPORT_BIN, CALL_BIN, BIN_CONTEXT); memory operations (FREEZE, THAW, SNAPSHOT, RESTORE, CLONE, COPY_ON_WRITE, TRAMPOLINE); hot patching; profiling and stats</td>
+        </tr>
+        <tr>
+          <td>v1.0</td>
+          <td>Tier-1 math library (50+ native ops), control flow (CMP/JE/JNE/JLT/JGT/JLE/JGE/JMP), functions (FUNC/CALL/RETURN), error handling (TRY/CATCH/END), basic I/O</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">CDNEE</div>
+  <div class="footer-note">Control Dynamic Native Execution Engine · v1.0 · Powered by Pythonaibrain-NASM / DNEE</div>
+  <div class="footer-note">© 2026 Divyanshu Sinha · divyanshu.sinha631@gmail.com</div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver(
+    entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+    { threshold: 0.06 }
+  );
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
