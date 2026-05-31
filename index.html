@@ -6,6 +6,7 @@
   <title>CDNEE — Control Dynamic Native Execution Engine</title>
   <meta name="description" content="CDNEE Official Docs"/>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0" rel="stylesheet"/>
   <style>
     /* ─── DESIGN TOKENS ─────────────────────────────────────── */
     :root {
@@ -261,6 +262,20 @@
       font-size: .7rem; letter-spacing: .12em;
       text-transform: uppercase; color: var(--muted);
     }
+    .code-copy-btn {
+      margin-left: auto;
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; gap: .3rem;
+      padding: .2rem .55rem; border-radius: 3px;
+      font-size: .65rem; letter-spacing: .08em;
+      text-transform: uppercase; font-family: var(--mono);
+      transition: color .2s, border-color .2s, background .2s;
+      white-space: nowrap;
+    }
+    .code-copy-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,.06); }
+    .code-copy-btn.copied { color: var(--accent2); border-color: var(--accent2); background: rgba(0,255,157,.06); }
+    .code-copy-btn .material-symbols-rounded { font-size: .95rem; }
     .code-dot { width: 10px; height: 10px; border-radius: 50%; }
     .d1 { background: #ff5f57; } .d2 { background: #febc2e; } .d3 { background: #28c840; }
     .code-body { padding: 1.5rem 2rem; overflow-x: auto; }
@@ -323,6 +338,16 @@
     }
     .card { background: var(--bg); padding: 2rem; transition: background .2s; }
     .card:hover { background: var(--surface); }
+    .material-symbols-rounded {
+      font-family: 'Material Symbols Rounded';
+      font-weight: normal; font-style: normal;
+      font-size: 1.4rem; line-height: 1;
+      letter-spacing: normal; text-transform: none;
+      display: inline-block; white-space: nowrap;
+      word-wrap: normal; direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      vertical-align: middle;
+    }
     .card-icon { font-size: 1.5rem; margin-bottom: 1rem; display: block; }
     .card-title { font-family: var(--heading); font-weight: 700; font-size: 1.05rem; margin-bottom: .5rem; color: var(--accent); }
     .card-body { color: var(--muted); font-size: .83rem; line-height: 1.7; }
@@ -342,6 +367,7 @@
       color: var(--accent); margin-bottom: .8rem;
       display: flex; align-items: center; gap: .5rem;
     }
+    .stdlib-block-title .material-symbols-rounded { font-size: 1.1rem; color: var(--accent3); }
     .stdlib-ops { list-style: none; display: flex; flex-direction: column; gap: .2rem; }
     .stdlib-ops li { font-size: .75rem; color: var(--muted); }
     .stdlib-ops li span { color: var(--accent3); }
@@ -850,7 +876,7 @@ ret
 
     <div class="stdlib-grid">
       <div class="stdlib-block">
-        <div class="stdlib-block-title">⚙️ Scalar Math</div>
+        <div class="stdlib-block-title"><span class="material-symbols-rounded">calculate</span> Scalar Math</div>
         <ul class="stdlib-ops">
           <li><span>ADD dest, a, b</span> — a + b</li>
           <li><span>SUB dest, a, b</span> — a − b</li>
@@ -869,7 +895,7 @@ ret
         </ul>
       </div>
       <div class="stdlib-block">
-        <div class="stdlib-block-title">🔢 Number Theory</div>
+        <div class="stdlib-block-title"><span class="material-symbols-rounded">functions</span> Number Theory</div>
         <ul class="stdlib-ops">
           <li><span>GCD dest, a, b</span> — greatest common divisor</li>
           <li><span>LCM dest, a, b</span> — least common multiple</li>
@@ -884,7 +910,7 @@ ret
         </ul>
       </div>
       <div class="stdlib-block">
-        <div class="stdlib-block-title">🔀 Bit Operations</div>
+        <div class="stdlib-block-title"><span class="material-symbols-rounded">memory</span> Bit Operations</div>
         <ul class="stdlib-ops">
           <li><span>POPCOUNT dest, n</span> — count set bits</li>
           <li><span>NLZ dest, n</span> — leading zeros (64-bit)</li>
@@ -898,7 +924,7 @@ ret
         </ul>
       </div>
       <div class="stdlib-block">
-        <div class="stdlib-block-title">🔒 Safe Arithmetic</div>
+        <div class="stdlib-block-title"><span class="material-symbols-rounded">shield</span> Safe Arithmetic</div>
         <ul class="stdlib-ops">
           <li><span>SAFE_ADD dest, a, b, flag</span> — overflow-detected add</li>
           <li><span>SAFE_SUB dest, a, b, flag</span> — overflow-detected sub</li>
@@ -908,7 +934,7 @@ ret
         </ul>
       </div>
       <div class="stdlib-block">
-        <div class="stdlib-block-title">#️⃣ Hashing &amp; Modular</div>
+        <div class="stdlib-block-title"><span class="material-symbols-rounded">tag</span> Hashing &amp; Modular</div>
         <ul class="stdlib-ops">
           <li><span>HASH_FNV64 dest, data, len</span> — FNV-1a 64-bit hash</li>
           <li><span>HASH_MURMUR64 dest, x</span> — Murmur-style 64-bit mix</li>
@@ -918,7 +944,7 @@ ret
         </ul>
       </div>
       <div class="stdlib-block">
-        <div class="stdlib-block-title">📊 Sort, Search &amp; Timing</div>
+        <div class="stdlib-block-title"><span class="material-symbols-rounded">sort</span> Sort, Search &amp; Timing</div>
         <ul class="stdlib-ops">
           <li><span>SORT_NET4 arr</span> — optimal sorting network for 4 elements</li>
           <li><span>BIN_SEARCH dest, arr, n, target</span> — binary search, -1 if not found</li>
@@ -1525,22 +1551,22 @@ msg: db "Hi OS!", 13, 10, 0
     <p class="section-body">CDNEE uses four file types that interoperate cleanly across the toolchain.</p>
     <div class="cards" style="margin-top:2rem;">
       <div class="card">
-        <span class="card-icon">📄</span>
+        <span class="card-icon"><span class="material-symbols-rounded" style="font-size:1.8rem;color:var(--accent)">description</span></span>
         <p class="card-title">.cdnee</p>
         <p class="card-body">CDNEE source program. Plain UTF-8 text. Entry point declared with @entry or defaults to the top of the file. Executed by DNEE_CLI or the Python API.</p>
       </div>
       <div class="card">
-        <span class="card-icon">📋</span>
+        <span class="card-icon"><span class="material-symbols-rounded" style="font-size:1.8rem;color:var(--accent)">library_books</span></span>
         <p class="card-title">.cdneef</p>
         <p class="card-body">CDNEE function definition file. Contains only FUNC definitions and optional EXTERN imports. Imported into programs with EXTERN. Supports alias_prefix for namespacing.</p>
       </div>
       <div class="card">
-        <span class="card-icon">⚙️</span>
+        <span class="card-icon"><span class="material-symbols-rounded" style="font-size:1.8rem;color:var(--accent)">settings</span></span>
         <p class="card-title">.asm</p>
         <p class="card-body">NASM assembly source loaded by JIT_COMPILE. Must begin with BITS 64 for x86-64 code. Uses System V AMD64 calling convention by default.</p>
       </div>
       <div class="card">
-        <span class="card-icon">💾</span>
+        <span class="card-icon"><span class="material-symbols-rounded" style="font-size:1.8rem;color:var(--accent)">save</span></span>
         <p class="card-title">.bin</p>
         <p class="card-body">Exported compiled binary region. Written by EXPORT_BIN, loaded by IMPORT_BIN or CALL_BIN. Bypasses the assembly step on subsequent runs — ready to execute directly.</p>
       </div>
@@ -1598,25 +1624,66 @@ msg: db "Hi OS!", 13, 10, 0
 </footer>
 
 <script>
+  // ── Scroll fade-in ──────────────────────────────────────────────────
   const observer = new IntersectionObserver(
     entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
     { threshold: 0.06 }
   );
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-  // Hamburger menu toggle
+  // ── Hamburger menu toggle ───────────────────────────────────────────
   const toggle = document.getElementById('navToggle');
   const navLinks = document.getElementById('navLinks');
   toggle.addEventListener('click', () => {
     toggle.classList.toggle('open');
     navLinks.classList.toggle('open');
   });
-  // Close menu when a nav link is clicked
   navLinks.querySelectorAll('a').forEach(a => {
     a.addEventListener('click', () => {
       toggle.classList.remove('open');
       navLinks.classList.remove('open');
     });
+  });
+
+  // ── Copy buttons ────────────────────────────────────────────────────
+  document.querySelectorAll('.code-box').forEach(box => {
+    const header = box.querySelector('.code-header');
+    const pre    = box.querySelector('pre');
+    if (!header || !pre) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'code-copy-btn';
+    btn.title = 'Copy code';
+    btn.innerHTML = '<span class="material-symbols-rounded">content_copy</span><span class="btn-label">Copy</span>';
+
+    btn.addEventListener('click', () => {
+      const code = pre.innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = '<span class="material-symbols-rounded">check</span><span class="btn-label">Copied!</span>';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<span class="material-symbols-rounded">content_copy</span><span class="btn-label">Copy</span>';
+        }, 2000);
+      }).catch(() => {
+        // Fallback for older browsers
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand('copy');
+        sel.removeAllRanges();
+        btn.classList.add('copied');
+        btn.innerHTML = '<span class="material-symbols-rounded">check</span><span class="btn-label">Copied!</span>';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<span class="material-symbols-rounded">content_copy</span><span class="btn-label">Copy</span>';
+        }, 2000);
+      });
+    });
+
+    header.appendChild(btn);
   });
 </script>
 </body>
